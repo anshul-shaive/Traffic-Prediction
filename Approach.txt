@@ -1,0 +1,95 @@
+
+Model Used: Combination of SARIMAX(for time-series) and ExtraTreesRegressor(for supervised regression). (Described below)
+
+####################
+Feature Engineering:
+
+The training set consists of 37750 rows and 14 different features along with the traffic_volume target variable. One of the features was date_time which was the most important feature as traffic_volume has the highest corelation with the features extracted from date_time.
+
+We extracted 13 additional features from the date_time including:
+1. weekday,
+2. year,
+3. month,
+4. week of the month, 
+5. week of the year, 
+6. day of week, 
+7. hour of day
+
+and boolean features such as:
+8. month_start, 
+9. month_end, 
+10. year_start, 
+11. year_end,
+12. quarter_start, 
+13. quarter_end.
+
+
+ The boolean feature such as month_start is true if the date is of the start of month, as the volume of traffic was significant at first week of the month or last week.
+
+After extracting the features from date_time, we set it as the index of the dataframe. (It will be neccessary for time series forecasting).
+
+
+###################
+Data Preprocessing:
+
+The feature wind_direction was given in cardinal degrees, we converted it to radians ((3.14/180)*degree).
+
+The features weather_description, weather type and is_holiday contained categorical data. We used one hot encoding to convert the categorical data to numerical data. Some of the features we extracted from date_time was also categorical in nature such as month and the boolean features(True and False),
+we used one hot encoding for them too. (pandas.get_dummies) 
+
+
+Now the major problem for us was that the date_time index we set contained duplicate values and many of the values was missing from the data.
+We considered dropping duplicates but we did not wanted to lose data. So we created two train set one with all the data including duplicates and the other with unique indexes( we kept the first value in case of duplicate, time series forecasting requires unique value).
+
+We used the train set with unique values for time series forecasting and the one which included duplicates for supervised regression. We then combined their predictions. (More on this below).
+
+Now for the missing values in the dataset we used data interpolation to fill missing indexes. We resampled the index with 1 hour frequency and used the linear interpolation to fill the values. We did this on the train set with unique values(as frequency must be constant for time series predictions algorithms to work properly).
+
+
+We plotted various graphs and visualizations to check the stationarity and seasonal trends in the data and for the corelations of different features with traffic_volume.
+
+
+######################
+About the models Used:
+
+We used SARIMAX (Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors) model for time-series forecasting and
+ExtraTreesRegressor for supervised regression. We then combined their predictions using a weighted average (weights determined using linear regression) :
+
+Final prediction = 0.4 X SARIMAX prediction + 0.6 X ExtraTreesRegressor prediction
+
+We used auto-arima from pyramid library to detect the parameters p,d and q for SARIMAX and we used grid search and validation data to optimize the parameters for ExtraTreesRegressor. 
+
+Besides this we tried different models including LSTM, GRU, Standard ARIMA, SVR and VotingRegressor (with RandomForest, AdaBoost and XGboost as participants). But the score was not as good as the one produced by the combination of SARIMAX (with traffic_volume as endogeneous variable and the rest of the features as exogeneous variables) and ExtraTreesRegressor.  
+
+We also considered using RNN encoder-decoder based models for time series forecasting but that required very high compute power to get decent predictions. In the end we opted for arima based models instead (SARIMAX).
+
+
+
+########################
+Libraries and tools used:
+
+Statsmodel for SARIMAX : statsmodels.tsa.statespace.SARIMAX
+
+pyramid-arima for auto-arima(to get parameters for SARIMAX) : pyramid-arima.auto_arima() 
+
+scikit-learn for ExtraTreesRegressor : sklearn.ensemble.ExtraTreesRegressor
+
+numpy, pandas and matplotlib for data processing and graphs.
+
+Tensorflow for lstm and gru models we tried.
+
+xgboost for XGBoostRegressor. 
+
+The source files and some visualizations are included.
+
+
+
+
+
+
+
+
+
+
+
+
